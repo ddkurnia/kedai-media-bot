@@ -1,143 +1,212 @@
 const express = require("express");
 const axios = require("axios");
-const fs = require("fs");
 
 const app = express();
 app.use(express.json());
 
-// TOKEN DAN PHONE NUMBER ID ANDA
+/*
+====================================
+KONFIGURASI
+====================================
+*/
+
 const TOKEN = "EAARwNbUXAHgBQwNTfbkIKmXLBYYj0CJjCbEUhCBbO0dhoGpvnMuq0NUUmxof5dtlhRSsscbtWdaYAPbC9wZCg2jGzTlfIzCIi9yNzehCb25H1pHZCVQp58dXUdDzmsoT3TWSbn4M9r7RhJXpKN0Q9GfZAgKI9amUmGMPnGEVMEOpmZCawGlApilrnKGfDQ7NpT3GSBwK6QOzKZCRw6Qqby9STzYr5szFr5T6vH9CQHp21HgdW57xLzZATgZCbAmVQuZApozXWIZBRZAmKlS1C0uSL6s8CpDfo7VuKw6TcZD";
 
-const PHONE_NUMBER_ID = "952598557943860";
+const PHONE_ID = "952598557943860";
 
-// database user
-const DB_FILE = "users.json";
+const VERIFY_TOKEN = "kedaimedia";
 
-// load database
-function loadUsers() {
-  try {
-    return JSON.parse(fs.readFileSync(DB_FILE));
-  } catch {
-    return [];
-  }
-}
 
-// save database
-function saveUsers(users) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(users));
-}
+/*
+====================================
+KIRIM MENU UTAMA (BUTTON)
+====================================
+*/
 
-// menu utama Kedai Media
-function mainMenu() {
-  return `Halo, selamat datang di Kedai Media.
+async function kirimMenuUtama(nomor) {
 
-Kami menyediakan layanan profesional IT & Media Sosial untuk bisnis, perusahaan, dan instansi pemerintah.
-
-Pilih layanan:
-
-1. Pembuatan Website Profesional
-2. Desain Grafis & Branding
-3. WhatsApp Automation & Chatbot
-4. Followers & Engagement Media Sosial
-5. Pemulihan Akun Media Sosial
-6. Keamanan & Penghapusan Akun
-7. Konsultasi IT & Media Sosial
-
-Balas dengan nomor layanan yang Anda butuhkan.`;
-}
-
-// balasan layanan
-function getReply(text) {
-
-  switch(text) {
-
-    case "1":
-      return "Kedai Media menyediakan pembuatan website profesional untuk bisnis dan instansi pemerintah.";
-
-    case "2":
-      return "Kami menyediakan layanan desain grafis profesional untuk kebutuhan branding dan promosi.";
-
-    case "3":
-      return "Kami menyediakan WhatsApp Automation dan Chatbot untuk bisnis dan instansi pemerintah.";
-
-    case "4":
-      return "Kami menyediakan layanan peningkatan followers dan engagement media sosial.";
-
-    case "5":
-      return "Kami membantu pemulihan akun media sosial yang terkunci atau diretas.";
-
-    case "6":
-      return "Kami menyediakan layanan keamanan dan penghapusan akun media sosial.";
-
-    case "7":
-    case "konsultasi":
-      return "Silakan kirimkan kebutuhan Anda. Tim Kedai Media siap membantu Anda.";
-
-    default:
-      return null;
-  }
-
-}
-
-// webhook receive message
-app.post("/webhook", async (req, res) => {
-
-  try {
-
-    const message =
-      req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-
-    if (!message) return res.sendStatus(200);
-
-    const from = message.from;
-    const text = message.text?.body?.toLowerCase() || "";
-
-    let users = loadUsers();
-
-    let reply = getReply(text);
-
-    // jika user baru → kirim menu
-    if (!users.includes(from)) {
-
-      users.push(from);
-      saveUsers(users);
-
-      reply = mainMenu();
-
-    }
-
-    // kirim balasan jika ada
-    if (reply) {
-
-      await axios.post(
-        `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: from,
-          text: { body: reply }
+  await axios.post(
+    `https://graph.facebook.com/v22.0/${PHONE_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to: nomor,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: {
+          text:
+            "Selamat datang di Kedai Media\n\nSolusi Profesional IT & Media Sosial\n\nSilakan pilih:"
         },
-        {
-          headers: {
-            Authorization: `Bearer ${TOKEN}`,
-            "Content-Type": "application/json"
-          }
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: "lihat_layanan",
+                title: "📋 Lihat Layanan"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: "hubungi_admin",
+                title: "👨‍💼 Hubungi Admin"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: "website",
+                title: "🌐 Website Kedai Media"
+              }
+            }
+          ]
         }
-      );
-
+      }
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        "Content-Type": "application/json"
+      }
     }
+  );
 
-  } catch (error) {
-    console.log(error.response?.data || error.message);
-  }
+}
 
-  res.sendStatus(200);
 
-});
+/*
+====================================
+KIRIM LIST LAYANAN
+====================================
+*/
 
-// webhook verification
+async function kirimListLayanan(nomor) {
+
+  await axios.post(
+    `https://graph.facebook.com/v22.0/${PHONE_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to: nomor,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        body: {
+          text: "Daftar layanan Kedai Media:"
+        },
+        action: {
+          button: "Pilih Layanan",
+          sections: [
+            {
+              title: "Layanan Utama",
+              rows: [
+                {
+                  id: "wa_bot",
+                  title: "WhatsApp Automation",
+                  description: "Mulai Rp350.000"
+                },
+                {
+                  id: "followers",
+                  title: "Tambah Followers",
+                  description: "Mulai Rp85.000"
+                },
+                {
+                  id: "engagement",
+                  title: "Engagement Sosial Media",
+                  description: "Like, Komentar, View"
+                },
+                {
+                  id: "website",
+                  title: "Pembuatan Website",
+                  description: "Mulai Rp500.000"
+                },
+                {
+                  id: "recovery",
+                  title: "Pemulihan Akun",
+                  description: "Mulai Rp250.000"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+}
+
+
+/*
+====================================
+KIRIM LINK ADMIN
+====================================
+*/
+
+async function kirimAdmin(nomor) {
+
+  await axios.post(
+    `https://graph.facebook.com/v22.0/${PHONE_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to: nomor,
+      text: {
+        body:
+          "Klik link berikut untuk chat langsung dengan admin:\n\nhttps://wa.me/6282285781863"
+      }
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+}
+
+
+/*
+====================================
+KIRIM LINK WEBSITE
+====================================
+*/
+
+async function kirimWebsite(nomor) {
+
+  await axios.post(
+    `https://graph.facebook.com/v22.0/${PHONE_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to: nomor,
+      text: {
+        body:
+          "Kunjungi website Kedai Media:\n\nhttps://ddkurnia.github.io/kedai-media/"
+      }
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+}
+
+
+/*
+====================================
+WEBHOOK VERIFY
+====================================
+*/
+
 app.get("/webhook", (req, res) => {
-
-  const VERIFY_TOKEN = "kedaimedia_verify";
 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -151,7 +220,73 @@ app.get("/webhook", (req, res) => {
 
 });
 
-// start server
+
+/*
+====================================
+WEBHOOK RECEIVE MESSAGE
+====================================
+*/
+
+app.post("/webhook", async (req, res) => {
+
+  try {
+
+    const msg =
+      req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+
+    if (!msg) return res.sendStatus(200);
+
+    const nomor = msg.from;
+
+    // tombol diklik
+    if (msg.type === "interactive") {
+
+      const id =
+        msg.interactive?.button_reply?.id ||
+        msg.interactive?.list_reply?.id;
+
+      if (id === "lihat_layanan")
+        await kirimListLayanan(nomor);
+
+      else if (id === "hubungi_admin")
+        await kirimAdmin(nomor);
+
+      else if (id === "website")
+        await kirimWebsite(nomor);
+
+      else
+        await kirimMenuUtama(nomor);
+
+    }
+
+    else {
+
+      await kirimMenuUtama(nomor);
+
+    }
+
+    res.sendStatus(200);
+
+  }
+
+  catch (err) {
+
+    console.log(err.response?.data || err.message);
+    res.sendStatus(500);
+
+  }
+
+});
+
+
+/*
+====================================
+START SERVER
+====================================
+*/
+
 app.listen(3000, () => {
-  console.log("Kedai Media WhatsApp Bot Aktif di port 3000");
+
+  console.log("Kedai Media Bot Aktif");
+
 });
