@@ -7,7 +7,7 @@ app.use(express.json());
 
 /*
 ===========================
-KONFIG
+KONFIGURASI
 ===========================
 */
 
@@ -21,13 +21,13 @@ const PHONE_NUMBER_ID = "989399234262931";
 
 /*
 ===========================
-ROOT
+ROOT (WAJIB ADA)
 ===========================
 */
 
 app.get("/", (req, res) => {
 
-  res.status(200).send("BOT KEDAI MEDIA AKTIF");
+  res.send("BOT KEDAI MEDIA AKTIF");
 
 });
 
@@ -69,13 +69,8 @@ app.post("/webhook", async (req, res) => {
 
   try {
 
-    const entry = req.body.entry?.[0];
-
-    const changes = entry?.changes?.[0];
-
-    const value = changes?.value;
-
-    const msg = value?.messages?.[0];
+    const msg =
+      req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
     if (!msg) {
 
@@ -85,19 +80,11 @@ app.post("/webhook", async (req, res) => {
 
     const from = msg.from;
 
-    /*
-    TEXT
-    */
-
     if (msg.type === "text") {
 
       const text = msg.text.body.toLowerCase();
 
-      if (
-        text === "menu" ||
-        text === "halo" ||
-        text === "hi"
-      ) {
+      if (text === "menu" || text === "halo") {
 
         await kirimMenu(from);
 
@@ -105,17 +92,12 @@ app.post("/webhook", async (req, res) => {
 
         await kirimText(
           from,
-          "Ketik *menu* untuk melihat layanan 🚀"
+          "Ketik menu untuk melihat layanan"
         );
 
       }
 
     }
-
-
-    /*
-    BUTTON
-    */
 
     if (msg.type === "interactive") {
 
@@ -126,7 +108,7 @@ app.post("/webhook", async (req, res) => {
 
         await kirimText(
           from,
-          "🌐 Jasa Website\nHarga mulai Rp500.000"
+          "Jasa Website mulai Rp500.000"
         );
 
       }
@@ -135,7 +117,7 @@ app.post("/webhook", async (req, res) => {
 
         await kirimText(
           from,
-          "🎨 Desain Grafis\nMulai Rp50.000"
+          "Desain Grafis mulai Rp50.000"
         );
 
       }
@@ -144,7 +126,7 @@ app.post("/webhook", async (req, res) => {
 
         await kirimText(
           from,
-          "🤖 Bot WhatsApp\nHarga Rp300.000"
+          "Bot WhatsApp Rp300.000"
         );
 
       }
@@ -155,10 +137,7 @@ app.post("/webhook", async (req, res) => {
 
   } catch (err) {
 
-    console.log(
-      "ERROR:",
-      err.response?.data || err.message
-    );
+    console.log(err.message);
 
     res.sendStatus(200);
 
@@ -193,8 +172,7 @@ async function kirimMenu(to) {
 
         body: {
 
-          text:
-"Selamat datang di Kedai Media 🚀\nPilih layanan:"
+          text: "Pilih layanan Kedai Media:"
 
         },
 
@@ -206,7 +184,7 @@ async function kirimMenu(to) {
               type: "reply",
               reply: {
                 id: "website",
-                title: "Jasa Website"
+                title: "Website"
               }
             },
 
@@ -214,7 +192,7 @@ async function kirimMenu(to) {
               type: "reply",
               reply: {
                 id: "desain",
-                title: "Desain Grafis"
+                title: "Desain"
               }
             },
 
@@ -269,11 +247,7 @@ async function kirimText(to, text) {
 
       to,
 
-      text: {
-
-        body: text
-
-      }
+      text: { body: text }
 
     },
 
@@ -296,14 +270,17 @@ async function kirimText(to, text) {
 
 /*
 ===========================
-START SERVER (WAJIB RAILWAY)
+START SERVER
+STRUKTUR INI WAJIB
 ===========================
 */
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, "0.0.0.0", () => {
 
-  console.log("BOT AKTIF DI PORT", PORT);
+  console.log("BOT KEDAI MEDIA AKTIF");
+
+  console.log("PORT:", PORT);
 
 });
