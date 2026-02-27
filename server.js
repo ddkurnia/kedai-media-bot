@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const OpenAI = require("openai");
 
 const app = express();
 app.use(express.json());
@@ -11,14 +12,14 @@ KONFIGURASI UTAMA
 */
 
 const VERIFY_TOKEN = "kedaimedia123";
-
 const ACCESS_TOKEN = "EAARwNbUXAHgBQ5PUIXS8Jsf2haucV7BG0qlksmrLrd78JhgGY0pXWxXGiPdZBCmdUtAcwoBJB4MWwjN0j0AE4qncU5Iwr9mPOrJZCBoRA2NUy7nootGX15ZCAXasZCMPDkNlcQtkPkehcz5oDcdS0571ff3ODXsJBBj3PAImd15boGTZA88WzF4Q7SBe7AMQ4eo92sp2ZAzAJnwMr5JZBmE5kautSFLfWQYmROXDSIB";
-
 const PHONE_NUMBER_ID = "989399234262931";
-
-/* nomor admin untuk menerima notifikasi lead */
 const ADMIN_NUMBER = "6282285781863";
 
+/* OPENAI AMBIL DARI ENV */
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 /*
 ===========================
@@ -27,9 +28,8 @@ ROOT TEST
 */
 
 app.get("/", (req, res) => {
-  res.send("BOT KEDAI MEDIA V2 AKTIF");
+  res.send("BOT KEDAI MEDIA V3 AI AKTIF");
 });
-
 
 /*
 ===========================
@@ -44,19 +44,13 @@ app.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode && token === VERIFY_TOKEN) {
-
     console.log("WEBHOOK VERIFIED");
-
     res.status(200).send(challenge);
-
   } else {
-
     res.sendStatus(403);
-
   }
 
 });
-
 
 /*
 ===========================
@@ -81,19 +75,32 @@ app.post("/webhook", async (req, res) => {
 
       const from = msg.from;
 
-
       /*
       ===========================
-      PESAN TEXT → TAMPILKAN MENU
+      PESAN TEXT
       ===========================
       */
 
       if (msg.type === "text") {
 
-        await kirimMenuUtama(from);
+        const text = msg.text.body.toLowerCase();
+
+        if (
+          text.includes("menu") ||
+          text.includes("layanan") ||
+          text.includes("halo") ||
+          text.includes("hi")
+        ) {
+
+          await kirimMenuUtama(from);
+
+        } else {
+
+          await balasAI(from, msg.text.body);
+
+        }
 
       }
-
 
       /*
       ===========================
@@ -106,11 +113,6 @@ app.post("/webhook", async (req, res) => {
         const id =
           msg.interactive.button_reply.id;
 
-
-        /*
-        WHATSAPP AUTOMATION
-        */
-
         if (id === "wa") {
 
           await kirimText(from,
@@ -120,22 +122,11 @@ UMKM : Rp300.000
 Bisnis : Rp800.000 – Rp1.500.000
 Instansi Pemerintah : Rp2.000.000+
 
-Fitur:
-• Auto reply
-• Menu tombol
-• Balasan otomatis
-• Sistem profesional
-
-Silakan klik Hubungi Admin untuk konsultasi gratis.`);
+Klik Hubungi Admin untuk konsultasi.`);
 
           await kirimNotifikasiAdmin(from, "WhatsApp Automation");
 
         }
-
-
-        /*
-        WEBSITE
-        */
 
         if (id === "website") {
 
@@ -146,18 +137,11 @@ Landing Page : Rp500.000
 Website Bisnis : Rp800.000+
 Company Profile : Rp1.500.000+
 
-Mobile friendly & profesional.
-
 Klik Hubungi Admin untuk konsultasi.`);
 
-          await kirimNotifikasiAdmin(from, "Pembuatan Website");
+          await kirimNotifikasiAdmin(from, "Website");
 
         }
-
-
-        /*
-        SOCIAL MEDIA
-        */
 
         if (id === "sosmed") {
 
@@ -167,18 +151,11 @@ Klik Hubungi Admin untuk konsultasi.`);
 Followers Instagram 1000 : Rp25.000+
 Followers TikTok 1000 : Rp20.000+
 
-Likes, Views, Komentar tersedia.
-
 Klik Hubungi Admin untuk order.`);
 
-          await kirimNotifikasiAdmin(from, "Social Media Service");
+          await kirimNotifikasiAdmin(from, "Social Media");
 
         }
-
-
-        /*
-        RECOVERY
-        */
 
         if (id === "recovery") {
 
@@ -189,18 +166,11 @@ Facebook : Rp100.000+
 Instagram : Rp100.000+
 TikTok : Rp250.000+
 
-Proses aman & profesional.
-
 Klik Hubungi Admin untuk bantuan.`);
 
-          await kirimNotifikasiAdmin(from, "Recovery Akun");
+          await kirimNotifikasiAdmin(from, "Recovery");
 
         }
-
-
-        /*
-        DEVELOPER
-        */
 
         if (id === "developer") {
 
@@ -213,21 +183,16 @@ API Integration : Rp300.000+
 
 Klik Hubungi Admin untuk konsultasi.`);
 
-          await kirimNotifikasiAdmin(from, "Developer & IT Service");
+          await kirimNotifikasiAdmin(from, "Developer");
 
         }
-
-
-        /*
-        ADMIN
-        */
 
         if (id === "admin") {
 
           await kirimText(from,
 `📞 Hubungi Admin Kedai Media
 
-https://wa.me/6282285781863`);
+https://wa.me/${ADMIN_NUMBER}`);
 
         }
 
@@ -251,7 +216,6 @@ https://wa.me/6282285781863`);
 
 });
 
-
 /*
 ===========================
 MENU UTAMA
@@ -261,162 +225,76 @@ MENU UTAMA
 async function kirimMenuUtama(to) {
 
   await axios.post(
-
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-
     {
-
       messaging_product: "whatsapp",
-
       to: to,
-
       type: "interactive",
-
       interactive: {
-
         type: "button",
-
         body: {
-
           text:
 `Selamat datang di Kedai Media 👋
 
-Kami siap membantu kebutuhan IT & Digital Anda.
-
 Silakan pilih layanan:`
-
         },
-
         action: {
-
           buttons: [
-
-            {
-              type: "reply",
-              reply: {
-                id: "wa",
-                title: "WA Automation"
-              }
-            },
-
-            {
-              type: "reply",
-              reply: {
-                id: "website",
-                title: "Pembuatan Website"
-              }
-            },
-
-            {
-              type: "reply",
-              reply: {
-                id: "sosmed",
-                title: "Social Media"
-              }
-            }
-
+            { type: "reply", reply: { id: "wa", title: "WA Automation" }},
+            { type: "reply", reply: { id: "website", title: "Website" }},
+            { type: "reply", reply: { id: "sosmed", title: "Social Media" }}
           ]
-
         }
-
       }
-
     },
-
     {
-
       headers: {
-
-        Authorization:
-          `Bearer ${ACCESS_TOKEN}`,
-
-        "Content-Type":
-          "application/json"
-
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        "Content-Type": "application/json"
       }
-
     }
-
-  );
-
-
-  await axios.post(
-
-    `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-
-    {
-
-      messaging_product: "whatsapp",
-
-      to: to,
-
-      type: "interactive",
-
-      interactive: {
-
-        type: "button",
-
-        body: {
-
-          text:
-"Menu lainnya:"
-
-        },
-
-        action: {
-
-          buttons: [
-
-            {
-              type: "reply",
-              reply: {
-                id: "recovery",
-                title: "Recovery Akun"
-              }
-            },
-
-            {
-              type: "reply",
-              reply: {
-                id: "developer",
-                title: "Developer & IT"
-              }
-            },
-
-            {
-              type: "reply",
-              reply: {
-                id: "admin",
-                title: "Hubungi Admin"
-              }
-            }
-
-          ]
-
-        }
-
-      }
-
-    },
-
-    {
-
-      headers: {
-
-        Authorization:
-          `Bearer ${ACCESS_TOKEN}`,
-
-        "Content-Type":
-          "application/json"
-
-      }
-
-    }
-
   );
 
 }
 
+/*
+===========================
+BALAS AI
+===========================
+*/
+
+async function balasAI(to, pesanUser) {
+
+  try {
+
+    const response =
+      await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Kamu adalah customer service Kedai Media. Jawab profesional, singkat, dan arahkan user untuk pilih menu atau hubungi admin."
+          },
+          {
+            role: "user",
+            content: pesanUser
+          }
+        ]
+      });
+
+    const jawaban =
+      response.choices[0].message.content;
+
+    await kirimText(to, jawaban);
+
+  } catch (err) {
+
+    console.log("ERROR AI:", err.message);
+
+  }
+
+}
 
 /*
 ===========================
@@ -427,93 +305,44 @@ KIRIM TEXT
 async function kirimText(to, text) {
 
   await axios.post(
-
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-
     {
-
       messaging_product: "whatsapp",
-
       to: to,
-
-      text: {
-        body: text
-      }
-
+      text: { body: text }
     },
-
     {
-
       headers: {
-
-        Authorization:
-          `Bearer ${ACCESS_TOKEN}`,
-
-        "Content-Type":
-          "application/json"
-
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        "Content-Type": "application/json"
       }
-
     }
-
   );
 
 }
 
-
 /*
 ===========================
-NOTIFIKASI ADMIN (LEAD BARU)
+NOTIFIKASI ADMIN
 ===========================
 */
 
 async function kirimNotifikasiAdmin(userNumber, layanan) {
 
-  await axios.post(
-
-    `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-
-    {
-
-      messaging_product: "whatsapp",
-
-      to: ADMIN_NUMBER,
-
-      text: {
-
-        body:
-`🔔 LEAD BARU KEDAI MEDIA
+  await kirimText(
+    ADMIN_NUMBER,
+`🔔 LEAD BARU
 
 Nomor Client:
 ${userNumber}
 
-Minat layanan:
+Minat:
 ${layanan}
 
-Segera follow up client.`
-
-      }
-
-    },
-
-    {
-
-      headers: {
-
-        Authorization:
-          `Bearer ${ACCESS_TOKEN}`,
-
-        "Content-Type":
-          "application/json"
-
-      }
-
-    }
-
+Segera follow up.`
   );
 
 }
-
 
 /*
 ===========================
@@ -526,7 +355,7 @@ const PORT = 3000;
 app.listen(PORT, "0.0.0.0", () => {
 
   console.log("=================================");
-  console.log("BOT KEDAI MEDIA V2 AKTIF");
+  console.log("BOT KEDAI MEDIA V3 AI AKTIF");
   console.log("PORT:", PORT);
   console.log("=================================");
 
