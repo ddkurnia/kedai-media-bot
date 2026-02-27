@@ -19,7 +19,7 @@ const PHONE_NUMBER_ID = "989399234262931";
 
 /*
 ===========================
-ROOT
+ROOT TEST
 ===========================
 */
 
@@ -41,10 +41,15 @@ app.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode && token === VERIFY_TOKEN) {
+
     console.log("WEBHOOK VERIFIED");
-    res.status(200).send(challenge);
+
+    return res.status(200).send(challenge);
+
   } else {
-    res.sendStatus(403);
+
+    return res.sendStatus(403);
+
   }
 
 });
@@ -52,7 +57,7 @@ app.get("/webhook", (req, res) => {
 
 /*
 ===========================
-TERIMA PESAN
+TERIMA PESAN MASUK
 ===========================
 */
 
@@ -71,19 +76,54 @@ app.post("/webhook", async (req, res) => {
       const msg = body.entry[0].changes[0].value.messages[0];
       const from = msg.from;
 
+      /*
+      ===========================
+      JIKA PESAN TEXT MASUK
+      ===========================
+      */
+
       if (msg.type === "text") {
 
-        await kirimMenu(from);
+        const text = msg.text.body.toLowerCase();
+
+        if (
+          text === "halo" ||
+          text === "hai" ||
+          text === "menu" ||
+          text === "start" ||
+          text === "hi"
+        ) {
+
+          await kirimMenu(from);
+
+        } else {
+
+          await kirimMenu(from);
+
+        }
 
       }
+
+
+      /*
+      ===========================
+      JIKA TOMBOL DIKLIK
+      ===========================
+      */
 
       if (msg.type === "interactive") {
 
         const buttonId = msg.interactive.button_reply.id;
 
+
+        /*
+        SEMUA LAYANAN
+        */
+
         if (buttonId === "layanan") {
 
           await kirimText(from,
+
 `📋 DAFTAR LAYANAN KEDAI MEDIA
 
 🌐 Website
@@ -93,28 +133,40 @@ Mulai Rp500.000
 Rp300.000
 
 🎨 Desain Grafis
-Logo: Rp100.000
-Poster: Rp50.000
-Banner: Rp50.000
+Logo : Rp100.000
+Poster : Rp50.000
+Banner : Rp50.000
 
-💻 Website + Bot + Desain Paket Hemat tersedia
+💼 Paket Hemat tersedia
 
 Minat? Balas pesan ini 👍`);
 
         }
 
+
+        /*
+        WEBSITE
+        */
+
         if (buttonId === "website") {
 
           await kirimText(from,
-`🌐 Website Kedai Media:
+
+`🌐 Website Kedai Media
 
 https://ddkurnia.github.io/kedai-media/`);
 
         }
 
+
+        /*
+        ADMIN
+        */
+
         if (buttonId === "admin") {
 
           await kirimText(from,
+
 `📞 Hubungi Admin langsung:
 
 https://wa.me/6282285781863`);
@@ -130,6 +182,7 @@ https://wa.me/6282285781863`);
   } catch (error) {
 
     console.log("ERROR:", error.response?.data || error.message);
+
     res.sendStatus(200);
 
   }
@@ -139,29 +192,40 @@ https://wa.me/6282285781863`);
 
 /*
 ===========================
-MENU AWAL
+MENU AWAL (TOMBOL)
 ===========================
 */
 
 async function kirimMenu(to) {
 
   await axios.post(
+
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+
     {
       messaging_product: "whatsapp",
+
       to: to,
+
       type: "interactive",
+
       interactive: {
+
         type: "button",
+
         body: {
+
           text:
 `Selamat datang di Kedai Media 👋
 
 Kami bisa membantu kebutuhan IT Anda 🚀
 
 Silakan pilih menu di bawah:`
+
         },
+
         action: {
+
           buttons: [
 
             {
@@ -189,15 +253,25 @@ Silakan pilih menu di bawah:`
             }
 
           ]
+
         }
+
       }
+
     },
+
     {
+
       headers: {
+
         Authorization: `Bearer ${ACCESS_TOKEN}`,
+
         "Content-Type": "application/json"
+
       }
+
     }
+
   );
 
 }
@@ -212,18 +286,33 @@ KIRIM TEXT
 async function kirimText(to, text) {
 
   await axios.post(
+
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+
     {
+
       messaging_product: "whatsapp",
+
       to: to,
-      text: { body: text }
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        "Content-Type": "application/json"
+
+      text: {
+        body: text
       }
+
+    },
+
+    {
+
+      headers: {
+
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+
+        "Content-Type": "application/json"
+
+      }
+
     }
+
   );
 
 }
