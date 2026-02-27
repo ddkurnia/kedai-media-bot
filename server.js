@@ -83,22 +83,25 @@ app.post("/webhook", async (req, res) => {
 
       if (msg.type === "text") {
 
-        const text = msg.text.body.toLowerCase();
+  const userText = msg.text.body.toLowerCase();
 
-        if (
-          text.includes("menu") ||
-          text.includes("layanan") ||
-          text.includes("halo") ||
-          text.includes("hi")
-        ) {
+  // hanya tampilkan menu jika user benar-benar minta menu
+  if (
+    userText === "menu" ||
+    userText === "halo" ||
+    userText === "hi"
+  ) {
 
-          await kirimMenuUtama(from);
+    await kirimMenuUtama(from);
 
-        } else {
+  } else {
 
-          await balasAI(from, msg.text.body);
+    // semua pesan lain pakai AI
+    await balasAI(from, msg.text.body);
 
-        }
+  }
+
+}
 
       }
 
