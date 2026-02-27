@@ -2,22 +2,22 @@ const express = require("express");
 
 const app = express();
 
-// ROOT
+// ROOT TEST
 app.get("/", (req, res) => {
-  res.status(200).send("BOT KEDAI MEDIA AKTIF");
+  res.send("BOT KEDAI MEDIA AKTIF");
 });
 
-// WEBHOOK
+// WEBHOOK TEST
 app.get("/webhook", (req, res) => {
-  res.status(200).send("WEBHOOK AKTIF");
+  res.send("WEBHOOK AKTIF");
 });
 
-// PORT FINAL FIX
-const PORT = process.env.PORT || 3000;
+// PAKSA PORT 3000
+const PORT = 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("=================================");
-  console.log("SERVER HIDUP");
+  console.log("BOT KEDAI MEDIA AKTIF");
   console.log("PORT:", PORT);
   console.log("=================================");
 });
