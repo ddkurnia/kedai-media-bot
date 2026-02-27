@@ -71,81 +71,52 @@ app.post("/webhook", async (req, res) => {
       const msg = body.entry[0].changes[0].value.messages[0];
       const from = msg.from;
 
-      /*
-      ===========================
-      JIKA PESAN BIASA
-      ===========================
-      */
-
       if (msg.type === "text") {
 
-        const text = msg.text.body.toLowerCase();
-
-        if (text === "halo" || text === "menu") {
-
-          await kirimMenu(from);
-
-        } else {
-
-          await kirimText(from, "Ketik *menu* untuk melihat layanan 🚀");
-
-        }
+        await kirimMenu(from);
 
       }
-
-      /*
-      ===========================
-      JIKA TOMBOL DIKLIK
-      ===========================
-      */
 
       if (msg.type === "interactive") {
 
         const buttonId = msg.interactive.button_reply.id;
 
+        if (buttonId === "layanan") {
+
+          await kirimText(from,
+`📋 DAFTAR LAYANAN KEDAI MEDIA
+
+🌐 Website
+Mulai Rp500.000
+
+🤖 Bot WhatsApp
+Rp300.000
+
+🎨 Desain Grafis
+Logo: Rp100.000
+Poster: Rp50.000
+Banner: Rp50.000
+
+💻 Website + Bot + Desain Paket Hemat tersedia
+
+Minat? Balas pesan ini 👍`);
+
+        }
+
         if (buttonId === "website") {
 
           await kirimText(from,
-`🌐 Jasa Website
+`🌐 Website Kedai Media:
 
-Harga mulai Rp500.000
-
-• Desain modern
-• Mobile friendly
-• Support hosting
-
-Minat? Balas: YA`);
-
-        }
-
-        if (buttonId === "desain") {
-
-          await kirimText(from,
-`🎨 Desain Grafis
-
-Logo: Rp100.000
-Poster: Rp50.000
-Banner: Rp50.000`);
-
-        }
-
-        if (buttonId === "botwa") {
-
-          await kirimText(from,
-`🤖 Bot WhatsApp
-
-Harga Rp300.000
-
-• Auto reply
-• Menu tombol
-• Hosting Railway`);
+https://ddkurnia.github.io/kedai-media/`);
 
         }
 
         if (buttonId === "admin") {
 
           await kirimText(from,
-`📞 Hubungi Admin:
+`📞 Hubungi Admin langsung:
+
 https://wa.me/6282285781863`);
 
         }
@@ -168,7 +139,7 @@ https://wa.me/6282285781863`);
 
 /*
 ===========================
-FUNCTION MENU TOMBOL
+MENU AWAL
 ===========================
 */
 
@@ -183,31 +154,32 @@ async function kirimMenu(to) {
       interactive: {
         type: "button",
         body: {
-          text: "Halo 👋\nSelamat datang di Kedai Media 🚀\n\nPilih layanan:"
+          text:
+`Selamat datang di Kedai Media 👋
+
+Kami bisa membantu kebutuhan IT Anda 🚀
+
+Silakan pilih menu di bawah:`
         },
         action: {
           buttons: [
+
+            {
+              type: "reply",
+              reply: {
+                id: "layanan",
+                title: "Semua Layanan"
+              }
+            },
+
             {
               type: "reply",
               reply: {
                 id: "website",
-                title: "Jasa Website"
+                title: "Website Kedai Media"
               }
             },
-            {
-              type: "reply",
-              reply: {
-                id: "desain",
-                title: "Desain Grafis"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: "botwa",
-                title: "Bot WhatsApp"
-              }
-            },
+
             {
               type: "reply",
               reply: {
@@ -215,6 +187,7 @@ async function kirimMenu(to) {
                 title: "Hubungi Admin"
               }
             }
+
           ]
         }
       }
@@ -232,7 +205,7 @@ async function kirimMenu(to) {
 
 /*
 ===========================
-FUNCTION TEXT
+KIRIM TEXT
 ===========================
 */
 
