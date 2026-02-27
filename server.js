@@ -24,7 +24,7 @@ ROOT TEST
 */
 
 app.get("/", (req, res) => {
-  res.send("BOT KEDAI MEDIA AKTIF");
+  res.send("BOT KEDAI MEDIA V2 AKTIF");
 });
 
 
@@ -44,11 +44,11 @@ app.get("/webhook", (req, res) => {
 
     console.log("WEBHOOK VERIFIED");
 
-    return res.status(200).send(challenge);
+    res.status(200).send(challenge);
 
   } else {
 
-    return res.sendStatus(403);
+    res.sendStatus(403);
 
   }
 
@@ -57,7 +57,7 @@ app.get("/webhook", (req, res) => {
 
 /*
 ===========================
-TERIMA PESAN MASUK
+TERIMA PESAN
 ===========================
 */
 
@@ -73,101 +73,104 @@ app.post("/webhook", async (req, res) => {
       body.entry[0].changes[0].value.messages
     ) {
 
-      const msg = body.entry[0].changes[0].value.messages[0];
+      const msg =
+        body.entry[0].changes[0].value.messages[0];
+
       const from = msg.from;
+
 
       /*
       ===========================
-      JIKA PESAN TEXT MASUK
+      PESAN TEXT → MENU UTAMA
       ===========================
       */
 
       if (msg.type === "text") {
 
-        const text = msg.text.body.toLowerCase();
-
-        if (
-          text === "halo" ||
-          text === "hai" ||
-          text === "menu" ||
-          text === "start" ||
-          text === "hi"
-        ) {
-
-          await kirimMenu(from);
-
-        } else {
-
-          await kirimMenu(from);
-
-        }
+        await kirimMenuUtama(from);
 
       }
 
 
       /*
       ===========================
-      JIKA TOMBOL DIKLIK
+      TOMBOL DIKLIK
       ===========================
       */
 
       if (msg.type === "interactive") {
 
-        const buttonId = msg.interactive.button_reply.id;
+        const id =
+          msg.interactive.button_reply.id;
 
 
-        /*
-        SEMUA LAYANAN
-        */
-
-        if (buttonId === "layanan") {
+        if (id === "wa") {
 
           await kirimText(from,
+`🤖 WhatsApp Automation
 
-`📋 DAFTAR LAYANAN KEDAI MEDIA
+UMKM : Rp300.000
+Bisnis : Rp800.000 – Rp1.500.000
+Instansi : Rp2.000.000+
 
-🌐 Website
-Mulai Rp500.000
-
-🤖 Bot WhatsApp
-Rp300.000
-
-🎨 Desain Grafis
-Logo : Rp100.000
-Poster : Rp50.000
-Banner : Rp50.000
-
-💼 Paket Hemat tersedia
-
-Minat? Balas pesan ini 👍`);
+Cocok untuk bisnis & instansi pemerintah.`);
 
         }
 
 
-        /*
-        WEBSITE
-        */
-
-        if (buttonId === "website") {
+        if (id === "website") {
 
           await kirimText(from,
+`🌐 Pembuatan Website
 
-`🌐 Website Kedai Media
-
-https://ddkurnia.github.io/kedai-media/`);
+Landing Page : Rp500.000
+Website Bisnis : Rp800.000+
+Company Profile : Rp1.500.000+`);
 
         }
 
 
-        /*
-        ADMIN
-        */
-
-        if (buttonId === "admin") {
+        if (id === "sosmed") {
 
           await kirimText(from,
+`📈 Social Media Service
 
-`📞 Hubungi Admin langsung:
+Followers IG : Rp25.000 / 1000
+Followers TikTok : Rp20.000 / 1000
+
+Likes, views, komentar tersedia`);
+
+        }
+
+
+        if (id === "recovery") {
+
+          await kirimText(from,
+`🔐 Recovery Akun
+
+Facebook : Rp100.000+
+Instagram : Rp100.000+
+TikTok : Rp250.000+`);
+
+        }
+
+
+        if (id === "developer") {
+
+          await kirimText(from,
+`💻 Developer & IT
+
+Bot custom : Rp300.000+
+Automation system : Rp500.000+
+API integration : Rp300.000+`);
+
+        }
+
+
+        if (id === "admin") {
+
+          await kirimText(from,
+`📞 Hubungi Admin
 
 https://wa.me/6282285781863`);
 
@@ -181,7 +184,11 @@ https://wa.me/6282285781863`);
 
   } catch (error) {
 
-    console.log("ERROR:", error.response?.data || error.message);
+    console.log(
+      "ERROR:",
+      error.response?.data ||
+      error.message
+    );
 
     res.sendStatus(200);
 
@@ -192,17 +199,18 @@ https://wa.me/6282285781863`);
 
 /*
 ===========================
-MENU AWAL (TOMBOL)
+MENU UTAMA
 ===========================
 */
 
-async function kirimMenu(to) {
+async function kirimMenuUtama(to) {
 
   await axios.post(
 
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
 
     {
+
       messaging_product: "whatsapp",
 
       to: to,
@@ -218,9 +226,9 @@ async function kirimMenu(to) {
           text:
 `Selamat datang di Kedai Media 👋
 
-Kami bisa membantu kebutuhan IT Anda 🚀
+Kami menyediakan layanan IT & Digital Profesional.
 
-Silakan pilih menu di bawah:`
+Pilih layanan:`
 
         },
 
@@ -231,8 +239,8 @@ Silakan pilih menu di bawah:`
             {
               type: "reply",
               reply: {
-                id: "layanan",
-                title: "Semua Layanan"
+                id: "wa",
+                title: "WA Automation"
               }
             },
 
@@ -240,7 +248,87 @@ Silakan pilih menu di bawah:`
               type: "reply",
               reply: {
                 id: "website",
-                title: "Website Kedai Media"
+                title: "Pembuatan Website"
+              }
+            },
+
+            {
+              type: "reply",
+              reply: {
+                id: "sosmed",
+                title: "Social Media"
+              }
+            }
+
+          ]
+
+        }
+
+      }
+
+    },
+
+    {
+
+      headers: {
+
+        Authorization:
+          `Bearer ${ACCESS_TOKEN}`,
+
+        "Content-Type":
+          "application/json"
+
+      }
+
+    }
+
+  );
+
+
+  /*
+  KIRIM MENU KEDUA
+  */
+
+  await axios.post(
+
+    `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+
+    {
+
+      messaging_product: "whatsapp",
+
+      to: to,
+
+      type: "interactive",
+
+      interactive: {
+
+        type: "button",
+
+        body: {
+
+          text:
+"Menu lainnya:"
+
+        },
+
+        action: {
+
+          buttons: [
+
+            {
+              type: "reply",
+              reply: {
+                id: "recovery",
+                title: "Recovery Akun"
+              }
+            },
+
+            {
+              type: "reply",
+              reply: {
+                id: "developer",
+                title: "Developer & IT"
               }
             },
 
@@ -264,9 +352,11 @@ Silakan pilih menu di bawah:`
 
       headers: {
 
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        Authorization:
+          `Bearer ${ACCESS_TOKEN}`,
 
-        "Content-Type": "application/json"
+        "Content-Type":
+          "application/json"
 
       }
 
@@ -305,9 +395,11 @@ async function kirimText(to, text) {
 
       headers: {
 
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        Authorization:
+          `Bearer ${ACCESS_TOKEN}`,
 
-        "Content-Type": "application/json"
+        "Content-Type":
+          "application/json"
 
       }
 
@@ -320,7 +412,7 @@ async function kirimText(to, text) {
 
 /*
 ===========================
-JALANKAN SERVER
+START SERVER
 ===========================
 */
 
@@ -329,7 +421,7 @@ const PORT = 3000;
 app.listen(PORT, "0.0.0.0", () => {
 
   console.log("=================================");
-  console.log("BOT KEDAI MEDIA AKTIF");
+  console.log("BOT KEDAI MEDIA V2 AKTIF");
   console.log("PORT:", PORT);
   console.log("=================================");
 
