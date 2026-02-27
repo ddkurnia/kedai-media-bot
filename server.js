@@ -40,11 +40,15 @@ app.get("/webhook", (req, res) => {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode && token === VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+
     console.log("WEBHOOK VERIFIED");
     res.status(200).send(challenge);
+
   } else {
+
     res.sendStatus(403);
+
   }
 
 });
@@ -73,7 +77,7 @@ app.post("/webhook", async (req, res) => {
 
       /*
       ===========================
-      JIKA PESAN BIASA
+      PESAN TEXT
       ===========================
       */
 
@@ -81,13 +85,20 @@ app.post("/webhook", async (req, res) => {
 
         const text = msg.text.body.toLowerCase();
 
-        if (text === "halo" || text === "menu") {
+        if (
+          text === "halo" ||
+          text === "menu" ||
+          text === "hi"
+        ) {
 
           await kirimMenu(from);
 
         } else {
 
-          await kirimText(from, "Ketik *menu* untuk melihat layanan 🚀");
+          await kirimText(
+            from,
+            "Ketik *menu* untuk melihat layanan 🚀"
+          );
 
         }
 
@@ -95,17 +106,19 @@ app.post("/webhook", async (req, res) => {
 
       /*
       ===========================
-      JIKA TOMBOL DIKLIK
+      TOMBOL DIKLIK
       ===========================
       */
 
       if (msg.type === "interactive") {
 
-        const buttonId = msg.interactive.button_reply.id;
+        const id =
+          msg.interactive.button_reply.id;
 
-        if (buttonId === "website") {
+        if (id === "website") {
 
-          await kirimText(from,
+          await kirimText(
+            from,
 `🌐 Jasa Website
 
 Harga mulai Rp500.000
@@ -114,39 +127,40 @@ Harga mulai Rp500.000
 • Mobile friendly
 • Support hosting
 
-Minat? Balas: YA`);
+Balas *menu* untuk kembali`
+          );
 
         }
 
-        if (buttonId === "desain") {
+        else if (id === "desain") {
 
-          await kirimText(from,
+          await kirimText(
+            from,
 `🎨 Desain Grafis
 
 Logo: Rp100.000
 Poster: Rp50.000
-Banner: Rp50.000`);
+Banner: Rp50.000
+
+Balas *menu* untuk kembali`
+          );
 
         }
 
-        if (buttonId === "botwa") {
+        else if (id === "botwa") {
 
-          await kirimText(from,
+          await kirimText(
+            from,
 `🤖 Bot WhatsApp
 
 Harga Rp300.000
 
 • Auto reply
 • Menu tombol
-• Hosting Railway`);
+• Hosting Railway
 
-        }
-
-        if (buttonId === "admin") {
-
-          await kirimText(from,
-`📞 Hubungi Admin:
-https://wa.me/6282285781863`);
+Balas *menu* untuk kembali`
+          );
 
         }
 
@@ -156,9 +170,13 @@ https://wa.me/6282285781863`);
 
     res.sendStatus(200);
 
-  } catch (error) {
+  } catch (err) {
 
-    console.log("ERROR:", error.response?.data || error.message);
+    console.log(
+      "ERROR:",
+      err.response?.data || err.message
+    );
+
     res.sendStatus(200);
 
   }
@@ -168,7 +186,7 @@ https://wa.me/6282285781863`);
 
 /*
 ===========================
-FUNCTION MENU TOMBOL
+MENU BUTTON
 ===========================
 */
 
@@ -180,13 +198,20 @@ async function kirimMenu(to) {
       messaging_product: "whatsapp",
       to: to,
       type: "interactive",
+
       interactive: {
+
         type: "button",
+
         body: {
-          text: "Halo 👋\nSelamat datang di Kedai Media 🚀\n\nPilih layanan:"
+          text:
+"👋 Selamat datang di Kedai Media\n\nSilakan pilih layanan:"
         },
+
         action: {
+
           buttons: [
+
             {
               type: "reply",
               reply: {
@@ -194,6 +219,7 @@ async function kirimMenu(to) {
                 title: "Jasa Website"
               }
             },
+
             {
               type: "reply",
               reply: {
@@ -201,23 +227,21 @@ async function kirimMenu(to) {
                 title: "Desain Grafis"
               }
             },
+
             {
               type: "reply",
               reply: {
                 id: "botwa",
                 title: "Bot WhatsApp"
               }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: "admin",
-                title: "Hubungi Admin"
-              }
             }
+
           ]
+
         }
+
       }
+
     },
     {
       headers: {
@@ -232,7 +256,7 @@ async function kirimMenu(to) {
 
 /*
 ===========================
-FUNCTION TEXT
+KIRIM TEXT
 ===========================
 */
 
@@ -258,17 +282,22 @@ async function kirimText(to, text) {
 
 /*
 ===========================
-JALANKAN SERVER
+START SERVER
 ===========================
 */
 
-const PORT = 3000;
+const PORT =
+  process.env.PORT || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
 
-  console.log("=================================");
-  console.log("BOT KEDAI MEDIA AKTIF");
-  console.log("PORT:", PORT);
-  console.log("=================================");
+    console.log("=================================");
+    console.log("BOT KEDAI MEDIA AKTIF");
+    console.log("PORT:", PORT);
+    console.log("=================================");
 
-});
+  }
+);
