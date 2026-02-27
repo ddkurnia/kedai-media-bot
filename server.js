@@ -2,17 +2,19 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
+
 app.use(express.json());
 
 /*
 ===========================
-KONFIGURASI
+KONFIG
 ===========================
 */
 
 const VERIFY_TOKEN = "kedaimedia123";
 
-const ACCESS_TOKEN = "EAARwNbUXAHgBQ4V11stRBbVZCZC3SF8ESOM9VyB6dijvXRJefgZBQuqlUF7ZAVHbqxA5H62r9ZBPT3yhwaZBCSLTGU0ZAuw4BZBkQZBvD8WInv08rAGH9PKTSX3qSYOQZCvBwyAHbLBHZAWjd46FPpfuXmwYrG8YR3tmYB9E8Nnky3J8sDX4e8fsbYY0g8JeBs272WlgsliPQbf9q7zf5zZB7p80ZCeHBEKAqRmi55OubKsrrV5HcH2OlSAZA7SaS33LcZBMkaINOuPq0AiEpfUwpGpDijTtAoamIzVluKHOtoZD";
+const ACCESS_TOKEN =
+"EAARwNbUXAHgBQ4V11stRBbVZCZC3SF8ESOM9VyB6dijvXRJefgZBQuqlUF7ZAVHbqxA5H62r9ZBPT3yhwaZBCSLTGU0ZAuw4BZBkQZBvD8WInv08rAGH9PKTSX3qSYOQZCvBwyAHbLBHZAWjd46FPpfuXmwYrG8YR3tmYB9E8Nnky3J8sDX4e8fsbYY0g8JeBs272WlgsliPQbf9q7zf5zZB7p80ZCeHBEKAqRmi55OubKsrrV5HcH2OlSAZA7SaS33LcZBMkaINOuPq0AiEpfUwpGpDijTtAoamIzVluKHOtoZD";
 
 const PHONE_NUMBER_ID = "989399234262931";
 
@@ -24,7 +26,9 @@ ROOT
 */
 
 app.get("/", (req, res) => {
-  res.send("BOT KEDAI MEDIA AKTIF");
+
+  res.status(200).send("BOT KEDAI MEDIA AKTIF");
+
 });
 
 
@@ -43,6 +47,7 @@ app.get("/webhook", (req, res) => {
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
 
     console.log("WEBHOOK VERIFIED");
+
     res.status(200).send(challenge);
 
   } else {
@@ -64,105 +69,83 @@ app.post("/webhook", async (req, res) => {
 
   try {
 
-    const body = req.body;
+    const entry = req.body.entry?.[0];
 
-    if (
-      body.entry &&
-      body.entry[0].changes &&
-      body.entry[0].changes[0].value.messages
-    ) {
+    const changes = entry?.changes?.[0];
 
-      const msg = body.entry[0].changes[0].value.messages[0];
-      const from = msg.from;
+    const value = changes?.value;
 
-      /*
-      ===========================
-      PESAN TEXT
-      ===========================
-      */
+    const msg = value?.messages?.[0];
 
-      if (msg.type === "text") {
+    if (!msg) {
 
-        const text = msg.text.body.toLowerCase();
+      return res.sendStatus(200);
 
-        if (
-          text === "halo" ||
-          text === "menu" ||
-          text === "hi"
-        ) {
+    }
 
-          await kirimMenu(from);
+    const from = msg.from;
 
-        } else {
+    /*
+    TEXT
+    */
 
-          await kirimText(
-            from,
-            "Ketik *menu* untuk melihat layanan 🚀"
-          );
+    if (msg.type === "text") {
 
-        }
+      const text = msg.text.body.toLowerCase();
+
+      if (
+        text === "menu" ||
+        text === "halo" ||
+        text === "hi"
+      ) {
+
+        await kirimMenu(from);
+
+      } else {
+
+        await kirimText(
+          from,
+          "Ketik *menu* untuk melihat layanan 🚀"
+        );
 
       }
 
-      /*
-      ===========================
-      TOMBOL DIKLIK
-      ===========================
-      */
+    }
 
-      if (msg.type === "interactive") {
 
-        const id =
-          msg.interactive.button_reply.id;
+    /*
+    BUTTON
+    */
 
-        if (id === "website") {
+    if (msg.type === "interactive") {
 
-          await kirimText(
-            from,
-`🌐 Jasa Website
+      const id =
+        msg.interactive.button_reply.id;
 
-Harga mulai Rp500.000
+      if (id === "website") {
 
-• Desain modern
-• Mobile friendly
-• Support hosting
+        await kirimText(
+          from,
+          "🌐 Jasa Website\nHarga mulai Rp500.000"
+        );
 
-Balas *menu* untuk kembali`
-          );
+      }
 
-        }
+      if (id === "desain") {
 
-        else if (id === "desain") {
+        await kirimText(
+          from,
+          "🎨 Desain Grafis\nMulai Rp50.000"
+        );
 
-          await kirimText(
-            from,
-`🎨 Desain Grafis
+      }
 
-Logo: Rp100.000
-Poster: Rp50.000
-Banner: Rp50.000
+      if (id === "botwa") {
 
-Balas *menu* untuk kembali`
-          );
-
-        }
-
-        else if (id === "botwa") {
-
-          await kirimText(
-            from,
-`🤖 Bot WhatsApp
-
-Harga Rp300.000
-
-• Auto reply
-• Menu tombol
-• Hosting Railway
-
-Balas *menu* untuk kembali`
-          );
-
-        }
+        await kirimText(
+          from,
+          "🤖 Bot WhatsApp\nHarga Rp300.000"
+        );
 
       }
 
@@ -193,10 +176,15 @@ MENU BUTTON
 async function kirimMenu(to) {
 
   await axios.post(
+
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+
     {
+
       messaging_product: "whatsapp",
-      to: to,
+
+      to,
+
       type: "interactive",
 
       interactive: {
@@ -204,8 +192,10 @@ async function kirimMenu(to) {
         type: "button",
 
         body: {
+
           text:
-"👋 Selamat datang di Kedai Media\n\nSilakan pilih layanan:"
+"Selamat datang di Kedai Media 🚀\nPilih layanan:"
+
         },
 
         action: {
@@ -243,12 +233,19 @@ async function kirimMenu(to) {
       }
 
     },
+
     {
+
       headers: {
+
         Authorization: `Bearer ${ACCESS_TOKEN}`,
+
         "Content-Type": "application/json"
+
       }
+
     }
+
   );
 
 }
@@ -263,18 +260,35 @@ KIRIM TEXT
 async function kirimText(to, text) {
 
   await axios.post(
+
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+
     {
+
       messaging_product: "whatsapp",
-      to: to,
-      text: { body: text }
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
-        "Content-Type": "application/json"
+
+      to,
+
+      text: {
+
+        body: text
+
       }
+
+    },
+
+    {
+
+      headers: {
+
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+
+        "Content-Type": "application/json"
+
+      }
+
     }
+
   );
 
 }
@@ -282,22 +296,14 @@ async function kirimText(to, text) {
 
 /*
 ===========================
-START SERVER
+START SERVER (WAJIB RAILWAY)
 ===========================
 */
 
-const PORT =
-  process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-app.listen(
-  PORT,
-  "0.0.0.0",
-  () => {
+app.listen(PORT, "0.0.0.0", () => {
 
-    console.log("=================================");
-    console.log("BOT KEDAI MEDIA AKTIF");
-    console.log("PORT:", PORT);
-    console.log("=================================");
+  console.log("BOT AKTIF DI PORT", PORT);
 
-  }
-);
+});
