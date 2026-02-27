@@ -5,33 +5,33 @@ const app = express();
 app.use(express.json());
 
 /*
-================================
+===============================
 CONFIG
-================================
+===============================
 */
 
 const VERIFY_TOKEN = "kedaimedia";
 
-const WHATSAPP_TOKEN = "EAARwNbUXAHgBQwNTfbkIKmXLBYYj0CJjCbEUhCBbO0dhoGpvnMuq0NUUmxof5dtlhRSsscbtWdaYAPbC9wZCg2jGzTlfIzCIi9yNzehCb25H1pHZCVQp58dXUdDzmsoT3TWSbn4M9r7RhJXpKN0Q9GfZAgKI9amUmGMPnGEVMEOpmZCawGlApilrnKGfDQ7NpT3GSBwK6QOzKZCRw6Qqby9STzYr5szFr5T6vH9CQHp21HgdW57xLzZATgZCbAmVQuZApozXWIZBRZAmKlS1C0uSL6s8CpDfo7VuKw6TcZD";
+/* TOKEN BARU ANDA */
+const WHATSAPP_TOKEN = "EAARwNbUXAHgBQ5EDstEvgD9wkGMypGSTGElLVGWmfO7cZBmozfZAjknNdVosqLLGMS89z9qPnjhDsf966nNBA2LhSXTqR6dZCRE4HJ6vzs8s2ggLeSado9B1ZB723nwZCGdP8eD3i7VMfIrcOLupgx9e260C9dUDTRZChm1yHpklpSLg8X94d0cYELYR7OSyWGzrEYECvqT6R9SIXf6ZBsZCT3SWrRopNdkdfZAYnTnZBCTtb19GBZBvGYJGmCtni0oZBahOtErxEIahjX6ZBZC4gAV2BFBNHUf7NMwraQzREZD";
 
-const PHONE_NUMBER_ID = "952598557943860";
-
+/* PHONE NUMBER ID BARU */
+const PHONE_NUMBER_ID = "989399234262931";
 
 /*
-================================
-ROOT
-================================
+===============================
+ROOT TEST
+===============================
 */
 
 app.get("/", (req, res) => {
-  res.status(200).send("Kedai Media Bot Aktif");
+  res.send("Kedai Media WhatsApp Bot Aktif");
 });
 
-
 /*
-================================
+===============================
 WEBHOOK VERIFY
-================================
+===============================
 */
 
 app.get("/webhook", (req, res) => {
@@ -40,123 +40,150 @@ app.get("/webhook", (req, res) => {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("Webhook verified");
+  if (mode && token === VERIFY_TOKEN) {
     return res.status(200).send(challenge);
   }
 
   res.sendStatus(403);
+
 });
 
-
 /*
-================================
-WEBHOOK RECEIVE
-================================
+===============================
+WEBHOOK RECEIVE MESSAGE
+===============================
 */
 
 app.post("/webhook", async (req, res) => {
 
   try {
 
-    console.log("Webhook received");
+    const entry = req.body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const message = changes?.value?.messages?.[0];
 
-    const body = req.body;
-
-    if (body.object) {
-
-      const entry = body.entry?.[0];
-      const change = entry?.changes?.[0];
-      const value = change?.value;
-      const messages = value?.messages;
-
-      if (messages && messages[0]) {
-
-        const from = messages[0].from;
-        const text = messages[0].text?.body?.toLowerCase() || "";
-
-        console.log("Message from:", from);
-        console.log("Text:", text);
-
-        await handleMessage(from, text);
-
-      }
-
-      res.sendStatus(200);
-
-    } else {
-      res.sendStatus(404);
+    if (!message) {
+      return res.sendStatus(200);
     }
 
-  } catch (err) {
+    const from = message.from;
+    const text = message.text?.body?.toLowerCase() || "";
 
-    console.log("ERROR WEBHOOK:", err.message);
+    console.log("Pesan masuk dari:", from);
+    console.log("Isi pesan:", text);
+
+    if (
+      text === "halo" ||
+      text === "hi" ||
+      text === "menu"
+    ) {
+      await sendMenu(from);
+    }
+
+    else if (text === "1") {
+
+      await sendText(from,
+`PEMBUATAN WEBSITE
+
+Landing Page : Rp300.000
+Website Bisnis : Rp500.000
+Website Premium : Rp1.000.000
+
+Termasuk:
+• Mobile friendly
+• SEO Ready
+• Desain modern
+
+Ketik MENU untuk kembali`
+      );
+
+    }
+
+    else if (text === "2") {
+
+      await sendText(from,
+`WHATSAPP AUTOMATION
+
+Basic : Rp300.000
+Pro : Rp500.000
+Instansi/Pemerintah : Rp1.000.000
+
+Fitur:
+• Auto reply
+• Menu otomatis
+• Server cloud
+• Bisa pakai AI
+
+Ketik MENU untuk kembali`
+      );
+
+    }
+
+    else if (text === "3") {
+
+      await sendText(from,
+`TAMBAH FOLLOWERS
+
+Instagram 1000 : Rp50.000
+TikTok 1000 : Rp40.000
+YouTube 1000 : Rp100.000
+
+Real dan aman
+
+Ketik MENU untuk kembali`
+      );
+
+    }
+
+    else if (text === "9") {
+
+      await sendText(from,
+`HUBUNGI ADMIN
+
+https://wa.me/6282285781863`
+      );
+
+    }
+
+    else if (text === "10") {
+
+      await sendText(from,
+`Website Kedai Media
+
+https://ddkurnia.github.io/kedai-media/`
+      );
+
+    }
+
+    else {
+
+      await sendMenu(from);
+
+    }
+
+    res.sendStatus(200);
+
+  }
+
+  catch (error) {
+
+    console.log("ERROR:", error.response?.data || error.message);
+
     res.sendStatus(200);
 
   }
 
 });
 
-
 /*
-================================
-HANDLE MESSAGE
-================================
-*/
-
-async function handleMessage(from, text) {
-
-  if (text === "halo" || text === "hi" || text === "menu") {
-    return sendMenu(from);
-  }
-
-  if (text === "1") {
-    return sendText(from,
-`Pembuatan Website
-
-Landing Page: Rp300.000
-Website Bisnis: Rp500.000
-Website Premium: Rp1.000.000
-
-Ketik MENU untuk kembali`);
-  }
-
-  if (text === "2") {
-    return sendText(from,
-`WhatsApp Automation
-
-Basic: Rp300.000
-Pro: Rp500.000
-Instansi/Pemerintah: Rp1.000.000
-
-Ketik MENU untuk kembali`);
-  }
-
-  if (text === "9") {
-    return sendText(from,
-`Hubungi Admin:
-https://wa.me/6282285781863`);
-  }
-
-  if (text === "10") {
-    return sendText(from,
-`Website:
-https://ddkurnia.github.io/kedai-media/`);
-  }
-
-  return sendMenu(from);
-}
-
-
-/*
-================================
+===============================
 SEND MENU
-================================
+===============================
 */
 
 async function sendMenu(to) {
 
-  return axios.post(
+  await axios.post(
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
     {
       messaging_product: "whatsapp",
@@ -164,14 +191,22 @@ async function sendMenu(to) {
       type: "text",
       text: {
         body:
-`Kedai Media
+`KEDAI MEDIA
 
-1. Website
+Silakan pilih layanan:
+
+1. Pembuatan Website
 2. WhatsApp Automation
+3. Tambah Followers
+4. Tambah Like & Komentar
+5. Pemulihan Akun
+6. Keamanan Akun
+7. Hapus Akun
+8. Jasa IT Custom
 9. Hubungi Admin
 10. Website
 
-Ketik angka`
+Ketik angka menu`
       }
     },
     {
@@ -184,16 +219,15 @@ Ketik angka`
 
 }
 
-
 /*
-================================
+===============================
 SEND TEXT
-================================
+===============================
 */
 
 async function sendText(to, message) {
 
-  return axios.post(
+  await axios.post(
     `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
     {
       messaging_product: "whatsapp",
@@ -213,11 +247,10 @@ async function sendText(to, message) {
 
 }
 
-
 /*
-================================
+===============================
 START SERVER
-================================
+===============================
 */
 
 const PORT = process.env.PORT || 3000;
