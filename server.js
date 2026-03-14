@@ -6,7 +6,7 @@ app.use(express.json());
 
 /*
 ====================================
-KONFIGURASI UTAMA
+KONFIGURASI
 ====================================
 */
 
@@ -18,7 +18,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 /*
 ====================================
-DATABASE MEMORY USER (ANTI LOOP)
+DATABASE USER MEMORY
 ====================================
 */
 
@@ -86,23 +86,58 @@ app.post("/webhook", async (req, res) => {
 
         const text = msg.text.body;
 
+        /*
+        ====================================
+        USER BARU → KIRIM MENU
+        ====================================
+        */
+
         if (!users[from]) {
 
           users[from] = {
-            welcomeSent: true,
-            notified: false,
+            step: "menu"
           };
 
-          await kirimWelcome(from);
+          await kirimMenu(from);
 
           await kirimNotifikasiAdmin(
             from,
             "Client baru menghubungi bot"
           );
 
+          return;
+
         }
 
-        await balasAI(from, text);
+        /*
+        ====================================
+        SETELAH MENU → AI JAWAB
+        ====================================
+        */
+
+        if (users[from].step === "menu") {
+
+          users[from].step = "ai";
+
+          await balasAI(from, text);
+
+          return;
+
+        }
+
+        /*
+        ====================================
+        MODE AI
+        ====================================
+        */
+
+        if (users[from].step === "ai") {
+
+          await balasAI(from, text);
+
+          return;
+
+        }
 
       }
 
@@ -122,28 +157,39 @@ app.post("/webhook", async (req, res) => {
 
 /*
 ====================================
-WELCOME MESSAGE
+MENU AWAL
 ====================================
 */
 
-async function kirimWelcome(to) {
+async function kirimMenu(to) {
 
-  const text =
+const text =
 
-`Selamat datang di Kedai Media 👋
+`Halo 👋
+Selamat datang di *Kedai Media Indonesia*
 
-Kami menyediakan layanan profesional:
+Kami menyediakan layanan digital profesional.
 
-• WhatsApp Automation
-• Pembuatan Website
-• Social Media Management
-• Followers, Likes, Engagement
-• Recovery Akun Sosial Media
-• Developer & IT Automation
+Layanan utama kami:
 
-Silakan jelaskan kebutuhan Anda, kami siap membantu.`;
+1️⃣ WhatsApp Automation Bot
+2️⃣ Pembuatan Website
+3️⃣ Social Media Management
+4️⃣ Followers & Engagement
+5️⃣ Pemulihan Akun Facebook / Instagram
+6️⃣ Sistem Automation & Custom Bot
 
-  await kirimText(to, text);
+Silakan ketik kebutuhan Anda.
+
+Contoh:
+
+• "Saya mau buat website"
+• "Berapa harga WhatsApp bot?"
+• "Akun IG saya di hack"
+
+Tim kami siap membantu Anda 😊`;
+
+await kirimText(to, text);
 
 }
 
@@ -157,54 +203,53 @@ async function balasAI(to, pesanUser) {
 
   try {
 
-    const prompt =
+const prompt =
 
-`Kamu adalah Sales Profesional Kedai Media.
+`Kamu adalah Customer Service profesional Kedai Media Indonesia.
 
 Tugas kamu:
 
-- jawab chat customer
-- pahami kebutuhan customer
-- arahkan ke layanan Kedai Media
-- gunakan bahasa ramah dan profesional
-- fokus closing
-- jangan terlalu panjang
-- arahkan customer untuk lanjut konsultasi admin jika serius
+• jawab chat customer dengan ramah
+• pahami kebutuhan customer
+• arahkan ke layanan Kedai Media
+• gunakan bahasa santai profesional
+• fokus membantu dan closing
 
 Layanan Kedai Media:
 
-1. WhatsApp Automation
-2. Website Development
+1. WhatsApp Automation Bot
+2. Pembuatan Website
 3. Social Media Management
 4. Followers & Engagement
-5. Recovery Account
-6. Automation System
-7. Custom Bot
+5. Pemulihan Akun Facebook / Instagram
+6. Sistem Automation
+7. Custom Bot & AI
+
+Jika customer serius, arahkan untuk konsultasi dengan admin Kedai Media.
 
 Pertanyaan customer:
 ${pesanUser}`;
 
-    const response = await axios.post(
+const response = await axios.post(
 
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
 
-      {
-        contents: [
-          {
-            parts: [
-              { text: prompt }
-            ]
-          }
-        ]
-      }
+{
+  contents: [
+    {
+      parts: [
+        { text: prompt }
+      ]
+    }
+  ]
+}
 
-    );
+);
 
-    const jawaban =
-      response.data.candidates[0]
-      .content.parts[0].text;
+const jawaban =
+response.data.candidates[0].content.parts[0].text;
 
-    await kirimText(to, jawaban);
+await kirimText(to, jawaban);
 
   } catch (err) {
 
@@ -216,32 +261,30 @@ ${pesanUser}`;
 
 /*
 ====================================
-KIRIM TEXT KE WHATSAPP
+KIRIM PESAN WHATSAPP
 ====================================
 */
 
 async function kirimText(to, text) {
 
-  await axios.post(
+await axios.post(
 
-    `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
 
-    {
-      messaging_product: "whatsapp",
-      to: to,
-      text: { body: text }
-    },
+{
+  messaging_product: "whatsapp",
+  to: to,
+  text: { body: text }
+},
 
-    {
-      headers: {
-        Authorization:
-          `Bearer ${ACCESS_TOKEN}`,
-        "Content-Type":
-          "application/json"
-      }
-    }
+{
+  headers: {
+    Authorization: `Bearer ${ACCESS_TOKEN}`,
+    "Content-Type": "application/json"
+  }
+}
 
-  );
+);
 
 }
 
@@ -251,14 +294,11 @@ NOTIFIKASI ADMIN
 ====================================
 */
 
-async function kirimNotifikasiAdmin(
-  nomor,
-  pesan
-) {
+async function kirimNotifikasiAdmin(nomor, pesan) {
 
-  await kirimText(
+await kirimText(
 
-    ADMIN_NUMBER,
+ADMIN_NUMBER,
 
 `Lead Baru Kedai Media
 
@@ -268,7 +308,7 @@ ${nomor}
 Pesan:
 ${pesan}`
 
-  );
+);
 
 }
 
@@ -282,9 +322,9 @@ const PORT = 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
 
-  console.log("================================");
-  console.log("KEDAI MEDIA SALES AI PRO AKTIF");
-  console.log("PORT:", PORT);
-  console.log("================================");
+console.log("================================");
+console.log("KEDAI MEDIA SALES AI PRO AKTIF");
+console.log("PORT:", PORT);
+console.log("================================");
 
 });
