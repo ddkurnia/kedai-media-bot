@@ -4,325 +4,183 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 
-/*
-====================================
-KONFIGURASI
-====================================
-*/
-
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-/*
-====================================
-DATABASE USER MEMORY
-====================================
-*/
-
 const users = {};
 
-/*
-====================================
-ROOT TEST
-====================================
-*/
-
+/* ROOT */
 app.get("/", (req, res) => {
-  res.send("KEDAI MEDIA SALES AI PRO AKTIF");
+  res.status(200).send("KEDAI MEDIA BOT RUNNING");
 });
 
-/*
-====================================
-VERIFY WEBHOOK
-====================================
-*/
+/* HEALTH CHECK */
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
+/* VERIFY WEBHOOK */
 app.get("/webhook", (req, res) => {
 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode && token === VERIFY_TOKEN) {
-
-    console.log("WEBHOOK VERIFIED");
-    res.status(200).send(challenge);
-
-  } else {
-
-    res.sendStatus(403);
-
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified");
+    return res.status(200).send(challenge);
   }
+
+  return res.sendStatus(403);
 
 });
 
-/*
-====================================
-TERIMA PESAN MASUK
-====================================
-*/
-
+/* TERIMA PESAN */
 app.post("/webhook", async (req, res) => {
+
+  res.sendStatus(200);
 
   try {
 
-    const body = req.body;
+    const entry = req.body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
 
-    if (
-      body.entry &&
-      body.entry[0].changes &&
-      body.entry[0].changes[0].value.messages
-    ) {
+    if (!messages) return;
 
-      const msg =
-        body.entry[0].changes[0].value.messages[0];
+    const msg = messages[0];
+    const from = msg.from;
 
-      const from = msg.from;
+    if (msg.type !== "text") return;
 
-      if (msg.type === "text") {
+    const text = msg.text.body;
 
-        const text = msg.text.body;
+    console.log("Message:", text);
 
-        /*
-        ====================================
-        USER BARU → KIRIM MENU
-        ====================================
-        */
+    if (!users[from]) {
 
-        if (!users[from]) {
+      users[from] = { step: "menu" };
 
-          users[from] = {
-            step: "menu"
-          };
+      await sendMenu(from);
+      await notifyAdmin(from);
 
-          await kirimMenu(from);
-
-          await kirimNotifikasiAdmin(
-            from,
-            "Client baru menghubungi bot"
-          );
-
-          return;
-
-        }
-
-        /*
-        ====================================
-        SETELAH MENU → AI JAWAB
-        ====================================
-        */
-
-        if (users[from].step === "menu") {
-
-          users[from].step = "ai";
-
-          await balasAI(from, text);
-
-          return;
-
-        }
-
-        /*
-        ====================================
-        MODE AI
-        ====================================
-        */
-
-        if (users[from].step === "ai") {
-
-          await balasAI(from, text);
-
-          return;
-
-        }
-
-      }
+      return;
 
     }
 
-    res.sendStatus(200);
+    await replyAI(from, text);
 
   } catch (err) {
 
-    console.log("ERROR WEBHOOK:", err.message);
-
-    res.sendStatus(200);
+    console.log("ERROR:", err.message);
 
   }
 
 });
 
-/*
-====================================
-MENU AWAL
-====================================
-*/
-
-async function kirimMenu(to) {
+/* MENU */
+async function sendMenu(to) {
 
 const text =
-
 `Halo 👋
-Selamat datang di *Kedai Media Indonesia*
 
-Kami menyediakan layanan digital profesional.
+Selamat datang di Kedai Media.
 
-Layanan utama kami:
+Layanan kami:
 
-1️⃣ WhatsApp Automation Bot
-2️⃣ Pembuatan Website
-3️⃣ Social Media Management
-4️⃣ Followers & Engagement
-5️⃣ Pemulihan Akun Facebook / Instagram
-6️⃣ Sistem Automation & Custom Bot
-
-Silakan ketik kebutuhan Anda.
-
-Contoh:
-
-• "Saya mau buat website"
-• "Berapa harga WhatsApp bot?"
-• "Akun IG saya di hack"
-
-Tim kami siap membantu Anda 😊`;
-
-await kirimText(to, text);
-
-}
-
-/*
-====================================
-GEMINI AI RESPONSE
-====================================
-*/
-
-async function balasAI(to, pesanUser) {
-
-  try {
-
-const prompt =
-
-`Kamu adalah Customer Service profesional Kedai Media Indonesia.
-
-Tugas kamu:
-
-• jawab chat customer dengan ramah
-• pahami kebutuhan customer
-• arahkan ke layanan Kedai Media
-• gunakan bahasa santai profesional
-• fokus membantu dan closing
-
-Layanan Kedai Media:
-
-1. WhatsApp Automation Bot
+1. WhatsApp Automation
 2. Pembuatan Website
 3. Social Media Management
 4. Followers & Engagement
-5. Pemulihan Akun Facebook / Instagram
-6. Sistem Automation
-7. Custom Bot & AI
+5. Recovery Akun
+6. Custom Bot
 
-Jika customer serius, arahkan untuk konsultasi dengan admin Kedai Media.
+Silakan tulis kebutuhan Anda.`;
 
-Pertanyaan customer:
-${pesanUser}`;
+await sendMessage(to, text);
+
+}
+
+/* AI */
+async function replyAI(to, userText) {
+
+try {
+
+const prompt = `Kamu CS Kedai Media. Jawab ramah dan bantu closing.
+
+Pertanyaan:
+${userText}`;
 
 const response = await axios.post(
-
 `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-
 {
-  contents: [
-    {
-      parts: [
-        { text: prompt }
-      ]
-    }
-  ]
+contents:[{parts:[{text:prompt}]}]
 }
-
 );
 
-const jawaban =
-response.data.candidates[0].content.parts[0].text;
+const reply =
+response?.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+"Silakan jelaskan kebutuhan Anda.";
 
-await kirimText(to, jawaban);
+await sendMessage(to, reply);
 
-  } catch (err) {
+} catch (err) {
 
-    console.log("ERROR GEMINI:", err.message);
+console.log("Gemini error:", err.message);
 
-  }
+await sendMessage(to,"Maaf sistem sedang sibuk.");
 
 }
 
-/*
-====================================
-KIRIM PESAN WHATSAPP
-====================================
-*/
+}
 
-async function kirimText(to, text) {
+/* KIRIM WA */
+async function sendMessage(to,text){
+
+try{
 
 await axios.post(
-
 `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-
 {
-  messaging_product: "whatsapp",
-  to: to,
-  text: { body: text }
+messaging_product:"whatsapp",
+to:to,
+text:{body:text}
 },
-
 {
-  headers: {
-    Authorization: `Bearer ${ACCESS_TOKEN}`,
-    "Content-Type": "application/json"
-  }
+headers:{
+Authorization:`Bearer ${ACCESS_TOKEN}`,
+"Content-Type":"application/json"
 }
-
+}
 );
 
+}catch(err){
+
+console.log("WA error:",err.response?.data||err.message);
+
 }
 
-/*
-====================================
-NOTIFIKASI ADMIN
-====================================
-*/
+}
 
-async function kirimNotifikasiAdmin(nomor, pesan) {
+/* NOTIF ADMIN */
+async function notifyAdmin(nomor){
 
-await kirimText(
-
+await sendMessage(
 ADMIN_NUMBER,
-
-`Lead Baru Kedai Media
-
-Nomor:
-${nomor}
-
-Pesan:
-${pesan}`
-
+`Lead baru masuk\n${nomor}`
 );
 
 }
 
-/*
-====================================
-START SERVER
-====================================
-*/
-
-const PORT = process.env.PORT || 3000;
+/* SERVER */
+const PORT = process.env.PORT;
 
 app.listen(PORT, () => {
-  console.log("================================");
-  console.log("KEDAI MEDIA SALES AI PRO AKTIF");
-  console.log("PORT:", PORT);
-  console.log("================================");
+
+console.log("Server running on port", PORT);
+
 });
