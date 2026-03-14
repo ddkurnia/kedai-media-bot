@@ -1,6 +1,5 @@
 const express = require("express");
 const axios = require("axios");
-const OpenAI = require("openai");
 
 const app = express();
 app.use(express.json());
@@ -16,16 +15,6 @@ const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-/*
-====================================
-OPENAI INIT (AMBIL DARI RAILWAY)
-====================================
-*/
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 /*
 ====================================
@@ -97,12 +86,6 @@ app.post("/webhook", async (req, res) => {
 
         const text = msg.text.body;
 
-        /*
-        ============================
-        USER BARU → KIRIM WELCOME
-        ============================
-        */
-
         if (!users[from]) {
 
           users[from] = {
@@ -118,12 +101,6 @@ app.post("/webhook", async (req, res) => {
           );
 
         }
-
-        /*
-        ============================
-        BALAS DENGAN SALES AI
-        ============================
-        */
 
         await balasAI(from, text);
 
@@ -172,7 +149,7 @@ Silakan jelaskan kebutuhan Anda, kami siap membantu.`;
 
 /*
 ====================================
-SALES AI RESPONSE
+GEMINI AI RESPONSE
 ====================================
 */
 
@@ -180,21 +157,13 @@ async function balasAI(to, pesanUser) {
 
   try {
 
-    const response =
-      await openai.chat.completions.create({
+    const prompt =
 
-        model: "gpt-4o-mini",
-
-        messages: [
-
-          {
-            role: "system",
-            content:
 `Kamu adalah Sales Profesional Kedai Media.
 
 Tugas kamu:
 
-- jawab semua chat customer
+- jawab chat customer
 - pahami kebutuhan customer
 - arahkan ke layanan Kedai Media
 - gunakan bahasa ramah dan profesional
@@ -212,29 +181,34 @@ Layanan Kedai Media:
 6. Automation System
 7. Custom Bot
 
-Tujuan utama:
-mengubah customer menjadi client.`
-          },
+Pertanyaan customer:
+${pesanUser}`;
 
+    const response = await axios.post(
+
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+
+      {
+        contents: [
           {
-            role: "user",
-            content: pesanUser
+            parts: [
+              { text: prompt }
+            ]
           }
+        ]
+      }
 
-        ],
-
-        temperature: 0.7
-
-      });
+    );
 
     const jawaban =
-      response.choices[0].message.content;
+      response.data.candidates[0]
+      .content.parts[0].text;
 
     await kirimText(to, jawaban);
 
   } catch (err) {
 
-    console.log("ERROR AI:", err.message);
+    console.log("ERROR GEMINI:", err.message);
 
   }
 
