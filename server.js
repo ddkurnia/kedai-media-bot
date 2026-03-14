@@ -1,6 +1,3 @@
-Berikut adalah kode WhatsApp Automation Anda yang sudah diperbarui secara lengkap. Saya telah menambahkan sistem menu interaktif (list button), katalog layanan detail beserta estimasi harga pasaran, dan mengoptimasi AI Sales agar lebih fokus pada penjualan.
-
-```javascript
 const express = require("express");
 const axios = require("axios");
 const OpenAI = require("openai");
@@ -95,7 +92,6 @@ app.post("/webhook", async (req, res) => {
           await kirimWelcome(from);
           await kirimNotifikasiAdmin(from, "Client baru menghubungi bot");
         } else {
-          // Handle text commands if needed
           await balasAI(from, msg.text.body);
         }
       }
@@ -209,7 +205,7 @@ Silakan pilih menu di bawah ini untuk melihat layanan kami:`;
 
 /*
 ====================================
-HANDLER PILIHAN MENU
+HANDLER PILIHAN MENU (PERBAIKAN BUG)
 ====================================
 */
 
@@ -246,7 +242,7 @@ async function handleMenuSelection(to, id) {
       await kirimText(to, `*KETENTUAN PEMBAYARAN*\n\nUntuk memulai pengerjaan, kami menerapkan sistem pembayaran:\n\n💰 *DP (Down Payment): 50%*\n💳 *Pelunasan: 50%* (setelah pekerjaan selesai)\n\nPembayaran bisa via Transfer Bank / E-Wallet.\n\nKetik 'Order' untuk melakukan pemesanan.`);
       break;
     default:
-      await balasAI(to, id); // If not specific ID, treat as text query
+      await balasAI(to, id);
   }
 }
 
@@ -354,7 +350,7 @@ Apakah Anda siap membuat brand baru?`;
 }
 
 async function kirimLayananIklan(to) {
-  const text = `*📣 JASA IKLAN DIGITAL (ADS)**
+  const text = `*📣 JASA IKLAN DIGITAL (ADS)*
 
 Maksimalkan penjualan dengan iklan yang tepat sasaran.
 
@@ -555,7 +551,7 @@ async function kirimListMenu(to, headerText, bodyText, buttonText, sections) {
     );
   } catch (err) {
     console.log("Error kirim list:", err.response ? err.response.data : err.message);
-    // Fallback jika list gagal (mungkin API limit)
+    // Fallback jika list gagal
     await kirimText(to, bodyText + "\n\n(Memuat menu gagal, silakan ketik layanan yang Anda cari)");
   }
 }
@@ -587,4 +583,3 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("PORT:", PORT);
   console.log("================================");
 });
-```
