@@ -11,13 +11,11 @@ KONFIGURASI UTAMA
 ====================================
 */
 
-const VERIFY_TOKEN = "kedaimedia123";
-
-const ACCESS_TOKEN = "EAARwNbUXAHgBQ0bxFa3PmpoZC0XRVvvIiIzSFUtyVnK76JU6sOajmk3mur7ZA8bwi9UEGdbz5GybXZC66BETuyKIupnZBip5MqDrAhCMA1zuDWsNf0mbsPtXL9zCDTiJ1mJGtrXOxeZAyRhaiMu2k1FEkbGVJZB7SHfrEYnAH1uXoZCIYZBujAbqTpDfAf5my8RP9DJGLNpR7wxVzWTMIIWiGbPLgk7BtdSUr9kaZB6jC";
-
-const PHONE_NUMBER_ID = "989399234262931";
-
-const ADMIN_NUMBER = "6282285781863";
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+const ADMIN_NUMBER = process.env.ADMIN_NUMBER;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 /*
 ====================================
