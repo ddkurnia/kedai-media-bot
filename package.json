@@ -1,7 +1,6 @@
 {
   "name": "kedai-media-bot",
   "version": "1.0.0",
-  "description": "Kedai Media WhatsApp AI Bot (Gemini)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
